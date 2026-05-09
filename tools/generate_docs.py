@@ -94,6 +94,55 @@ def add_code_block(doc, lines, shaded=True):
     spacer.paragraph_format.space_after = Pt(2)
 
 
+REPO_URL = "https://github.com/MuhammadMehroz786/Pixel-Lang"
+
+
+def add_repo_link(doc, label="Project Repository"):
+    """Insert 'Project Repository: <clickable url>' below the title."""
+    p = doc.add_paragraph()
+    pf = p.paragraph_format
+    pf.space_after = Pt(10)
+
+    lbl_run = p.add_run(f"{label}: ")
+    lbl_run.font.name = "Calibri"
+    lbl_run.font.size = Pt(11)
+    lbl_run.font.color.rgb = BLACK
+    lbl_run.bold = True
+
+    # Hyperlink
+    part = doc.part
+    r_id = part.relate_to(
+        REPO_URL,
+        "http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink",
+        is_external=True,
+    )
+    hyperlink = OxmlElement("w:hyperlink")
+    hyperlink.set(qn("r:id"), r_id)
+
+    new_run = OxmlElement("w:r")
+    rPr = OxmlElement("w:rPr")
+    rFonts = OxmlElement("w:rFonts")
+    rFonts.set(qn("w:ascii"), "Calibri")
+    rFonts.set(qn("w:hAnsi"), "Calibri")
+    rPr.append(rFonts)
+    sz = OxmlElement("w:sz")
+    sz.set(qn("w:val"), "22")  # 11pt = 22 half-points
+    rPr.append(sz)
+    color = OxmlElement("w:color")
+    color.set(qn("w:val"), "0563C1")
+    rPr.append(color)
+    underline = OxmlElement("w:u")
+    underline.set(qn("w:val"), "single")
+    rPr.append(underline)
+    new_run.append(rPr)
+    text_el = OxmlElement("w:t")
+    text_el.text = REPO_URL
+    new_run.append(text_el)
+    hyperlink.append(new_run)
+    p._p.append(hyperlink)
+    return p
+
+
 def add_bullets(doc, items):
     for item in items:
         p = doc.add_paragraph(style="List Bullet")
@@ -135,6 +184,7 @@ def new_doc():
 def make_team_reflection():
     doc = new_doc()
     add_heading(doc, "Team Reflection", level=1)
+    add_repo_link(doc)
 
     justify(doc, """
         Working on PixLang gave us a much clearer picture of what actually
@@ -213,6 +263,7 @@ def make_team_reflection():
 def make_compiler_architecture():
     doc = new_doc()
     add_heading(doc, "Compiler Architecture", level=1)
+    add_repo_link(doc)
 
     justify(doc, """
         PixLang compiles a .pix source file into a PNG image through a
@@ -290,6 +341,7 @@ def make_compiler_architecture():
 def make_language_reference():
     doc = new_doc()
     add_heading(doc, "Language Reference Manual", level=1)
+    add_repo_link(doc)
 
     justify(doc, """
         PixLang is a small domain-specific language for procedurally
@@ -396,6 +448,7 @@ def _test_entry(doc, n, name, canvas, body):
 def make_test_suite():
     doc = new_doc()
     add_heading(doc, "Test Suite", level=1)
+    add_repo_link(doc)
 
     justify(doc, """
         PixLang ships with six test programs in tests/, each chosen to
