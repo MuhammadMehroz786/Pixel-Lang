@@ -1,0 +1,14 @@
+; Test 1: Concentric Squares Pattern
+; Expected output: concentric coloured squares on dark background
+CANVAS 64 64
+PALETTE retro: #1A1C2C, #5D275D, #B13E53, #EF7D57, #FFCD75, #A7F070
+FILL #1A1C2C
+VAR size = 60
+VAR col = 1
+LOOP WHILE size > 4:
+    RECT (32 - size / 2), (32 - size / 2), size, size, retro[col]
+    size = size - 8
+    col = (col + 1) MOD 6
+ENDLOOP
+CIRCLE 32 32 RADIUS 6 COLOR retro[5]
+SAVE "outputs/test1_concentric.png"

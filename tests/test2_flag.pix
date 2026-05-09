@@ -1,0 +1,8 @@
+; Test 2: Simple Three-Stripe Flag
+; Expected output: three equal horizontal stripes: red, white, green
+CANVAS 90 60
+FILL #FFFFFF
+RECT 0, 0, 90, 20, #FF0000
+RECT 0, 20, 90, 20, #FFFFFF
+RECT 0, 40, 90, 20, #00AA00
+SAVE "outputs/test2_flag.png"

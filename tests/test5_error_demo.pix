@@ -1,0 +1,37 @@
+; Test 5: Error Handling Demo
+; This program contains deliberate errors to demonstrate error reporting.
+;
+; ERROR 1 (Semantic): Drawing before CANVAS is declared
+; Uncomment the line below to test:
+; RECT 0, 0, 10, 10, #FF0000
+
+; ERROR 2 (Semantic): Using an undeclared variable
+; Uncomment to test:
+; CANVAS 64 64
+; FILL #000000
+; RECT x, 0, 10, 10, #FF0000
+
+; ERROR 3 (Semantic): Wrong SAVE extension
+; Uncomment to test:
+; CANVAS 64 64
+; SAVE "output.bmp"
+
+; ERROR 4 (Lexer): Invalid character
+; Uncomment to test:
+; CANVAS 64 64
+; @ bad token
+
+; ERROR 5 (Parser): Missing ENDLOOP
+; Uncomment to test:
+; CANVAS 64 64
+; LOOP TIMES 5:
+;     FILL #FF0000
+
+; ── Valid fallback program (runs when no errors are uncommented) ──────────────
+CANVAS 64 64
+FILL #222222
+PALETTE err: #FF4444, #44FF44, #4444FF
+RECT 10, 10, 20, 20, err[0]
+RECT 25, 10, 20, 20, err[1]
+RECT 40, 10, 20, 20, err[2]
+SAVE "outputs/test5_error_demo.png"

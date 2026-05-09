@@ -1,0 +1,22 @@
+; Test 3: Checkerboard Pattern using LOOP TIMES and IF/ELSE
+; Expected output: 8x8 checkerboard of black and white squares (each 8px)
+CANVAS 64 64
+FILL #FFFFFF
+VAR row = 0
+LOOP TIMES 8:
+    VAR col = 0
+    LOOP TIMES 8:
+        VAR x = col * 8
+        VAR y = row * 8
+        VAR sum = row + col
+        VAR rem = sum MOD 2
+        IF rem == 0:
+            RECT x, y, 8, 8, #000000
+        ELSE:
+            RECT x, y, 8, 8, #FFFFFF
+        ENDIF
+        col = col + 1
+    ENDLOOP
+    row = row + 1
+ENDLOOP
+SAVE "outputs/test3_checkerboard.png"

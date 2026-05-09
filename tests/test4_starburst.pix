@@ -1,0 +1,15 @@
+; Test 4: Starburst Line Art
+; Expected output: lines radiating from center point on black background
+CANVAS 128 128
+FILL #000000
+PALETTE star: #FF0000, #FF7700, #FFFF00, #00FF00, #0000FF, #8800FF, #FF00FF, #FFFFFF
+LINE 64 64 0   0   COLOR star[0]
+LINE 64 64 64  0   COLOR star[1]
+LINE 64 64 128 0   COLOR star[2]
+LINE 64 64 128 64  COLOR star[3]
+LINE 64 64 128 128 COLOR star[4]
+LINE 64 64 64  128 COLOR star[5]
+LINE 64 64 0   128 COLOR star[6]
+LINE 64 64 0   64  COLOR star[7]
+CIRCLE 64 64 RADIUS 8 COLOR #FFFFFF
+SAVE "outputs/test4_starburst.png"

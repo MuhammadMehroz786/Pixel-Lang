@@ -1,0 +1,60 @@
+; Test 6: Roblox / Lego style blocky character (256x320)
+; A simple front-facing figure built from rectangles.
+
+CANVAS 256 320
+
+PALETTE skin: #1A1C2C, #F2C28C, #C98A5B, #FFE3B5
+PALETTE body: #2E5BFF, #C42E2E, #1F3A8A, #7A1818, #FFD23F, #222222
+
+; Background
+FILL skin[0]
+
+; --- Head (yellow Lego block) ---
+RECT 88, 32,  80, 64, body[4]
+; Head shading on right edge
+RECT 152, 32, 16, 64, body[3]
+
+; --- Eyes ---
+RECT 108, 56, 12, 12, skin[0]
+RECT 136, 56, 12, 12, skin[0]
+; Eye highlights
+RECT 112, 56, 4, 4, skin[3]
+RECT 140, 56, 4, 4, skin[3]
+
+; --- Mouth ---
+RECT 112, 76, 32, 8, skin[0]
+RECT 116, 80, 4, 4, skin[2]
+RECT 136, 80, 4, 4, skin[2]
+
+; --- Neck ---
+RECT 116, 96, 24, 8, skin[1]
+
+; --- Torso (blue shirt) ---
+RECT 80, 104, 96, 88, body[0]
+; Torso shading
+RECT 160, 104, 16, 88, body[2]
+; Shirt collar / detail line
+RECT 112, 104, 32, 8, body[2]
+
+; --- Arms ---
+; Left arm
+RECT 56, 104, 24, 88, body[4]
+RECT 56, 176, 24, 16, skin[1]
+; Right arm (with shading)
+RECT 176, 104, 24, 88, body[4]
+RECT 192, 104, 8, 88, body[3]
+RECT 176, 176, 24, 16, skin[1]
+
+; --- Legs (red pants) ---
+; Left leg
+RECT 88, 192, 36, 88, body[1]
+RECT 88, 192, 36, 8, body[3]
+; Right leg
+RECT 132, 192, 36, 88, body[1]
+RECT 156, 192, 12, 88, body[3]
+
+; --- Feet (black shoes) ---
+RECT 84, 280, 44, 24, body[5]
+RECT 128, 280, 44, 24, body[5]
+
+SAVE "outputs/test6_character.png"
