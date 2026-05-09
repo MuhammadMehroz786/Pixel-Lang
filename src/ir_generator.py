@@ -1,78 +1,49 @@
-# =============================================================================
-# ir_generator.py — PixLang Intermediate Code Generator (Phase 4)
-#
-# Generates Three-Address Code (TAC) from the AST.
-# TAC instruction formats:
-#
-#   ('ASSIGN',   result,  operand,  None  )   t1 = operand
-#   ('BINOP',    result,  left, op, right )   t1 = left op right
-#   ('UNARY',    result,  op,  operand    )   t1 = op operand
-#   ('CANVAS',   w,       h,   None       )   CANVAS w h
-#   ('PALETTE',  name,    colors,  None   )   PALETTE name [colors]
-#   ('FILL',     color,   None,    None   )   FILL color
-#   ('RECT',     x,y,w,h, color,  None   )   RECT x y w h color
-#   ('CIRCLE',   cx,cy,r, color,  None   )   CIRCLE cx cy r color
-#   ('LINE',     x1,y1,x2,y2, color      )   LINE x1 y1 x2 y2 color
-#   ('PIXEL',    x, y,   color,  None    )   PIXEL x y color
-#   ('SAVE',     filename, None, None    )   SAVE filename
-#   ('LABEL',    label,   None,   None   )   label:
-#   ('JUMP',     label,   None,   None   )   goto label
-#   ('JUMPF',    cond,    label,  None   )   if not cond goto label
-#   ('PARAM',    value,   None,   None   )   param value
-# =============================================================================
- 
 from ast_nodes import *
- 
- 
+
+
 class IRGenerator:
     def __init__(self):
-        self.instructions = []   # List of TAC tuples
+        self.instructions = []
         self._temp_count  = 0
         self._label_count = 0
- 
-    # ── Utility ───────────────────────────────────────────────────────────────
- 
+
     def new_temp(self):
         self._temp_count += 1
         return f"t{self._temp_count}"
- 
+
     def new_label(self):
         self._label_count += 1
         return f"L{self._label_count}"
- 
+
     def emit(self, *args):
         self.instructions.append(args)
- 
-    # ── Entry point ───────────────────────────────────────────────────────────
- 
+
     def generate(self, program: Program):
         for stmt in program.statements:
             self.gen_stmt(stmt)
         return self.instructions
- 
-    # ── Statement code gen ────────────────────────────────────────────────────
- 
+
     def gen_stmt(self, node):
         if isinstance(node, CanvasStmt):
             w = self.gen_expr(node.width)
             h = self.gen_expr(node.height)
             self.emit('CANVAS', w, h, None)
- 
+
         elif isinstance(node, PaletteStmt):
             self.emit('PALETTE', node.name, node.colors, None)
- 
+
         elif isinstance(node, FillStmt):
             c = self.gen_expr(node.color)
             self.emit('FILL', c, None, None)
- 
+
         elif isinstance(node, VarDecl):
             val = self.gen_expr(node.expr)
             self.emit('ASSIGN', node.name, val, None)
- 
+
         elif isinstance(node, AssignStmt):
             val = self.gen_expr(node.expr)
             self.emit('ASSIGN', node.name, val, None)
- 
+
         elif isinstance(node, RectStmt):
             x = self.gen_expr(node.x)
             y = self.gen_expr(node.y)
@@ -80,14 +51,14 @@ class IRGenerator:
             h = self.gen_expr(node.h)
             c = self.gen_expr(node.color)
             self.emit('RECT', (x, y, w, h, c), None, None)
- 
+
         elif isinstance(node, CircleStmt):
             cx = self.gen_expr(node.cx)
             cy = self.gen_expr(node.cy)
             r  = self.gen_expr(node.radius)
             c  = self.gen_expr(node.color)
             self.emit('CIRCLE', (cx, cy, r, c), None, None)
- 
+
         elif isinstance(node, LineStmt):
             x1 = self.gen_expr(node.x1)
             y1 = self.gen_expr(node.y1)
@@ -95,16 +66,16 @@ class IRGenerator:
             y2 = self.gen_expr(node.y2)
             c  = self.gen_expr(node.color)
             self.emit('LINE', (x1, y1, x2, y2, c), None, None)
- 
+
         elif isinstance(node, PixelStmt):
             x = self.gen_expr(node.x)
             y = self.gen_expr(node.y)
             c = self.gen_expr(node.color)
             self.emit('PIXEL', (x, y, c), None, None)
- 
+
         elif isinstance(node, SaveStmt):
             self.emit('SAVE', node.filename, None, None)
- 
+
         elif isinstance(node, LoopWhile):
             start_lbl = self.new_label()
             end_lbl   = self.new_label()
@@ -115,7 +86,7 @@ class IRGenerator:
                 self.gen_stmt(s)
             self.emit('JUMP', start_lbl, None, None)
             self.emit('LABEL', end_lbl, None, None)
- 
+
         elif isinstance(node, LoopTimes):
             counter = self.new_temp()
             limit   = self.gen_expr(node.times)
@@ -133,7 +104,7 @@ class IRGenerator:
             self.emit('ASSIGN', counter, inc_tmp, None)
             self.emit('JUMP', start_lbl, None, None)
             self.emit('LABEL', end_lbl, None, None)
- 
+
         elif isinstance(node, IfStmt):
             else_lbl = self.new_label()
             end_lbl  = self.new_label()
@@ -147,46 +118,41 @@ class IRGenerator:
                 for s in node.else_body:
                     self.gen_stmt(s)
             self.emit('LABEL', end_lbl, None, None)
- 
-    # ── Expression code gen ───────────────────────────────────────────────────
- 
+
     def gen_expr(self, node):
-        """Returns either a literal value or a temp variable name."""
         if isinstance(node, NumberLit):
             return node.value
- 
+
         if isinstance(node, ColorLit):
-            return node.value   # e.g. "#FF0000"
- 
+            return node.value
+
         if isinstance(node, StringLit):
             return node.value
- 
+
         if isinstance(node, Identifier):
             return node.name
- 
+
         if isinstance(node, PaletteIndex):
             idx = self.gen_expr(node.index_expr)
             tmp = self.new_temp()
             self.emit('PALETTE_IDX', tmp, node.palette_name, idx)
             return tmp
- 
+
         if isinstance(node, UnaryOp):
             operand = self.gen_expr(node.operand)
             tmp = self.new_temp()
             self.emit('UNARY', tmp, node.op, operand)
             return tmp
- 
+
         if isinstance(node, BinOp):
             left  = self.gen_expr(node.left)
             right = self.gen_expr(node.right)
             tmp   = self.new_temp()
             self.emit('BINOP', tmp, left, node.op, right)
             return tmp
- 
+
         raise ValueError(f"Unknown expression node in IR gen: {type(node).__name__}")
- 
-    # ── Pretty printer ────────────────────────────────────────────────────────
- 
+
     def pretty_print(self):
         lines = []
         for instr in self.instructions:

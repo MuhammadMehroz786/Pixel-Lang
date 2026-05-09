@@ -1,69 +1,31 @@
-# =============================================================================
-# parser.py — PixLang Recursive Descent Parser (Phase 2)
-#
-# Grammar (EBNF):
-#
-#   program      → statement* EOF
-#   statement    → canvas_stmt | palette_stmt | fill_stmt | var_decl
-#                | assign_stmt | rect_stmt | circle_stmt | line_stmt
-#                | pixel_stmt | save_stmt | loop_while | loop_times | if_stmt
-#                | NEWLINE
-#
-#   canvas_stmt  → 'CANVAS' expr expr NEWLINE
-#   palette_stmt → 'PALETTE' IDENTIFIER ':' COLOR_LIT (',' COLOR_LIT)* NEWLINE
-#   fill_stmt    → 'FILL' color_expr NEWLINE
-#   var_decl     → 'VAR' IDENTIFIER '=' expr NEWLINE
-#   assign_stmt  → IDENTIFIER '=' expr NEWLINE
-#   rect_stmt    → 'RECT' expr ',' expr ',' expr ',' expr ',' color_expr NEWLINE
-#   circle_stmt  → 'CIRCLE' expr expr 'RADIUS' expr 'COLOR' color_expr NEWLINE
-#   line_stmt    → 'LINE' expr expr expr expr 'COLOR' color_expr NEWLINE
-#   pixel_stmt   → 'PIXEL' expr expr 'COLOR' color_expr NEWLINE
-#   save_stmt    → 'SAVE' STRING NEWLINE
-#   loop_while   → 'LOOP' 'WHILE' expr ':' NEWLINE statement* 'ENDLOOP' NEWLINE
-#   loop_times   → 'LOOP' 'TIMES' expr ':' NEWLINE statement* 'ENDLOOP' NEWLINE
-#   if_stmt      → 'IF' expr ':' NEWLINE statement*
-#                  ['ELSE' ':' NEWLINE statement*] 'ENDIF' NEWLINE
-#
-#   expr         → comparison
-#   comparison   → addition (('>'|'<'|'>='|'<='|'=='|'!=') addition)?
-#   addition     → term (('+' | '-') term)*
-#   term         → factor (('*' | '/' | 'MOD') factor)*
-#   factor       → '-' factor | '(' expr ')' | atom
-#   atom         → INT | FLOAT | COLOR_LIT | STRING | palette_index | IDENTIFIER
-#   color_expr   → COLOR_LIT | palette_index | IDENTIFIER
-#   palette_index→ IDENTIFIER '[' expr ']'
-# =============================================================================
- 
 from ast_nodes import *
- 
- 
+
+
 class ParseError(Exception):
     def __init__(self, message, token=None):
         loc = f" at Line {token.line}, Col {token.col}" if token else ""
         super().__init__(f"[Parse Error]{loc}: {message}")
         self.token = token
- 
- 
+
+
 class Parser:
     def __init__(self, tokens):
         self.tokens = tokens
         self.pos    = 0
- 
-    # ── Helpers ───────────────────────────────────────────────────────────────
- 
+
     def current(self):
         return self.tokens[self.pos]
- 
+
     def peek(self, offset=1):
         idx = self.pos + offset
         return self.tokens[idx] if idx < len(self.tokens) else self.tokens[-1]
- 
+
     def advance(self):
         tok = self.tokens[self.pos]
         if self.pos < len(self.tokens) - 1:
             self.pos += 1
         return tok
- 
+
     def expect(self, tok_type, value=None):
         tok = self.current()
         if tok.type != tok_type:
@@ -75,13 +37,12 @@ class Parser:
                 f"Expected {value!r} but got {tok.value!r}", tok
             )
         return self.advance()
- 
+
     def skip_newlines(self):
         while self.current().type == 'NEWLINE':
             self.advance()
- 
+
     def expect_newline(self):
-        """Consume one or more newlines (or EOF)."""
         tok = self.current()
         if tok.type not in ('NEWLINE', 'EOF'):
             raise ParseError(
@@ -89,15 +50,13 @@ class Parser:
             )
         while self.current().type == 'NEWLINE':
             self.advance()
- 
+
     def match_keyword(self, *kws):
         tok = self.current()
         if tok.type == 'KEYWORD' and tok.value in kws:
             return True
         return False
- 
-    # ── Entry point ───────────────────────────────────────────────────────────
- 
+
     def parse(self):
         self.skip_newlines()
         stmts = []
@@ -107,9 +66,7 @@ class Parser:
                 continue
             stmts.append(self.parse_statement())
         return Program(stmts)
- 
-    # ── Statement dispatcher ──────────────────────────────────────────────────
- 
+
     def parse_statement(self):
         tok = self.current()
         if tok.type == 'KEYWORD':
@@ -127,14 +84,11 @@ class Parser:
             if kw == 'IF':       return self.parse_if()
             raise ParseError(f"Unexpected keyword {kw!r}", tok)
         elif tok.type == 'IDENTIFIER':
-            # Could be assignment: IDENTIFIER '=' expr
             if self.peek().type == 'OP_ASSIGN':
                 return self.parse_assign()
             raise ParseError(f"Unexpected identifier {tok.value!r}", tok)
         raise ParseError(f"Unexpected token {tok.type!r} ({tok.value!r})", tok)
- 
-    # ── Individual statement parsers ──────────────────────────────────────────
- 
+
     def parse_canvas(self):
         line = self.current().line
         self.expect('KEYWORD', 'CANVAS')
@@ -142,7 +96,7 @@ class Parser:
         h = self.parse_expr()
         self.expect_newline()
         return CanvasStmt(w, h, line=line)
- 
+
     def parse_palette(self):
         line = self.current().line
         self.expect('KEYWORD', 'PALETTE')
@@ -153,20 +107,19 @@ class Parser:
         colors.append(col_tok.value)
         while self.current().type == 'COMMA':
             self.advance()
-            # allow newline+indent continuation
             self.skip_newlines()
             c = self.expect('COLOR_LIT')
             colors.append(c.value)
         self.expect_newline()
         return PaletteStmt(name_tok.value, colors, line=line)
- 
+
     def parse_fill(self):
         line = self.current().line
         self.expect('KEYWORD', 'FILL')
         color = self.parse_color_expr()
         self.expect_newline()
         return FillStmt(color, line=line)
- 
+
     def parse_var_decl(self):
         line = self.current().line
         self.expect('KEYWORD', 'VAR')
@@ -175,7 +128,7 @@ class Parser:
         expr = self.parse_expr()
         self.expect_newline()
         return VarDecl(name_tok.value, expr, line=line)
- 
+
     def parse_assign(self):
         line = self.current().line
         name_tok = self.expect('IDENTIFIER')
@@ -183,7 +136,7 @@ class Parser:
         expr = self.parse_expr()
         self.expect_newline()
         return AssignStmt(name_tok.value, expr, line=line)
- 
+
     def parse_rect(self):
         line = self.current().line
         self.expect('KEYWORD', 'RECT')
@@ -198,7 +151,7 @@ class Parser:
         color = self.parse_color_expr()
         self.expect_newline()
         return RectStmt(x, y, w, h, color, line=line)
- 
+
     def parse_circle(self):
         line = self.current().line
         self.expect('KEYWORD', 'CIRCLE')
@@ -210,7 +163,7 @@ class Parser:
         color = self.parse_color_expr()
         self.expect_newline()
         return CircleStmt(cx, cy, r, color, line=line)
- 
+
     def parse_line(self):
         line = self.current().line
         self.expect('KEYWORD', 'LINE')
@@ -222,7 +175,7 @@ class Parser:
         color = self.parse_color_expr()
         self.expect_newline()
         return LineStmt(x1, y1, x2, y2, color, line=line)
- 
+
     def parse_pixel(self):
         line = self.current().line
         self.expect('KEYWORD', 'PIXEL')
@@ -232,14 +185,14 @@ class Parser:
         color = self.parse_color_expr()
         self.expect_newline()
         return PixelStmt(x, y, color, line=line)
- 
+
     def parse_save(self):
         line = self.current().line
         self.expect('KEYWORD', 'SAVE')
         fname_tok = self.expect('STRING')
         self.expect_newline()
         return SaveStmt(fname_tok.value, line=line)
- 
+
     def parse_loop(self):
         line = self.current().line
         self.expect('KEYWORD', 'LOOP')
@@ -263,7 +216,7 @@ class Parser:
             self.expect_newline()
             return LoopTimes(n, body, line=line)
         raise ParseError("Expected WHILE or TIMES after LOOP", tok)
- 
+
     def parse_if(self):
         line = self.current().line
         self.expect('KEYWORD', 'IF')
@@ -280,9 +233,8 @@ class Parser:
         self.expect('KEYWORD', 'ENDIF')
         self.expect_newline()
         return IfStmt(cond, then_body, else_body, line=line)
- 
+
     def parse_body(self, *terminators):
-        """Parse statements until we hit one of the terminator keywords."""
         stmts = []
         while True:
             self.skip_newlines()
@@ -293,35 +245,30 @@ class Parser:
                 break
             stmts.append(self.parse_statement())
         return stmts
- 
-    # ── Color expression ──────────────────────────────────────────────────────
- 
+
     def parse_color_expr(self):
         tok = self.current()
         if tok.type == 'COLOR_LIT':
             self.advance()
             return ColorLit(tok.value, line=tok.line)
-        # palette_index or bare identifier
         if tok.type == 'IDENTIFIER':
             if self.peek().type == 'LBRACKET':
                 return self.parse_palette_index()
             self.advance()
             return Identifier(tok.value, line=tok.line)
         raise ParseError(f"Expected a color value but got {tok.type!r}", tok)
- 
+
     def parse_palette_index(self):
         tok = self.current()
-        name = self.advance().value   # IDENTIFIER
+        name = self.advance().value
         self.expect('LBRACKET')
         idx = self.parse_expr()
         self.expect('RBRACKET')
         return PaletteIndex(name, idx, line=tok.line)
- 
-    # ── Expression grammar (recursive descent) ────────────────────────────────
- 
+
     def parse_expr(self):
         return self.parse_comparison()
- 
+
     def parse_comparison(self):
         left = self.parse_addition()
         cmp_ops = {
@@ -336,7 +283,7 @@ class Parser:
             right = self.parse_addition()
             return BinOp(left, op, right, line=line)
         return left
- 
+
     def parse_addition(self):
         left = self.parse_term()
         while self.current().type in ('OP_PLUS', 'OP_MINUS'):
@@ -346,7 +293,7 @@ class Parser:
             right = self.parse_term()
             left  = BinOp(left, op, right, line=line)
         return left
- 
+
     def parse_term(self):
         left = self.parse_factor()
         while self.current().type in ('OP_MUL', 'OP_DIV') or (
@@ -361,22 +308,20 @@ class Parser:
             right = self.parse_factor()
             left  = BinOp(left, op, right, line=line)
         return left
- 
+
     def parse_factor(self):
         tok = self.current()
-        # Unary minus
         if tok.type == 'OP_MINUS':
             self.advance()
             operand = self.parse_factor()
             return UnaryOp('-', operand, line=tok.line)
-        # Grouped expression
         if tok.type == 'LPAREN':
             self.advance()
             expr = self.parse_expr()
             self.expect('RPAREN')
             return expr
         return self.parse_atom()
- 
+
     def parse_atom(self):
         tok = self.current()
         if tok.type == 'INT':
@@ -392,7 +337,6 @@ class Parser:
             self.advance()
             return StringLit(tok.value, line=tok.line)
         if tok.type == 'IDENTIFIER':
-            # palette_index or variable
             if self.peek().type == 'LBRACKET':
                 return self.parse_palette_index()
             self.advance()
